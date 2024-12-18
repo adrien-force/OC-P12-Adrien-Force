@@ -34,8 +34,9 @@ class GardeningTipController extends AbstractController
         if ($gardeningTips !== []) {
             $jsonGardeningTips = $serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
             return new JsonResponse($jsonGardeningTips, Response::HTTP_OK, [], true);
+        } else {
+            throw $this->createNotFoundException('Aucun conseil trouvé');
         }
-        return new JsonResponse('Aucun conseil trouvé', Response::HTTP_NOT_FOUND);
     }
 
     #[Route('/api/conseil/{id}', name: 'app_gardening_tip_show', methods: ['GET'])]
@@ -51,8 +52,9 @@ class GardeningTipController extends AbstractController
         if ($gardeningTip !== null) {
             $jsonGardeningTip = $serializer->serialize(data: $gardeningTip, format: 'json', context: ['groups' => 'gardening_tip:read']);
             return new JsonResponse($jsonGardeningTip, Response::HTTP_OK, [], true);
+        } else {
+            throw $this->createNotFoundException('Conseil non trouvé');
         }
-        return new JsonResponse('Conseil non trouvé', Response::HTTP_NOT_FOUND);
     }
 
     #[Route('/api/conseil/{id}', name: 'app_gardening_tip_delete', methods: ['DELETE'])]
@@ -69,8 +71,9 @@ class GardeningTipController extends AbstractController
             $entityManager->remove($gardeningTip);
             $entityManager->flush();
             return new JsonResponse('Conseil supprimé', Response::HTTP_NO_CONTENT);
+        } else {
+            throw $this->createNotFoundException('Conseil non trouvé');
         }
-        return new JsonResponse('Conseil non trouvé', Response::HTTP_NOT_FOUND);
     }
 
     #[Route('/api/conseil', name: 'app_gardening_tip_create', methods: ['POST'])]
@@ -81,18 +84,13 @@ class GardeningTipController extends AbstractController
         SerializerInterface    $serializer
     ): JsonResponse
     {
-        try {
-            $json = $request->getContent();
-            $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
+        $json = $request->getContent();
+        $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
 
-            $entityManager->persist($gardeningTip);
-            $entityManager->flush();
+        $entityManager->persist($gardeningTip);
+        $entityManager->flush();
 
-            return new JsonResponse('Conseil crée', Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            return new JsonResponse(['error' => 'Une erreur s\'est produite lors de la creation du conseil, verifiez vos données.', 'details' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-
-        }
+        return new JsonResponse('Conseil crée', Response::HTTP_CREATED);
     }
 
     #[Route('/api/conseil/{id}', name: 'app_gardening_tip_update', methods: ['PUT'])]
@@ -108,18 +106,15 @@ class GardeningTipController extends AbstractController
         $gardeningTip = $gardeningTipRepository->find($id);
 
         if ($gardeningTip !== null) {
-            try {
-                $json = $request->getContent();
-                $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
+            $json = $request->getContent();
+            $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
 
-                $entityManager->persist($gardeningTip);
-                $entityManager->flush();
+            $entityManager->persist($gardeningTip);
+            $entityManager->flush();
 
-                return new JsonResponse('Conseil modifié', Response::HTTP_OK);
-            } catch (\Exception $e) {
-                return new JsonResponse(['error' => 'Une erreur s\'est produite lors de la modification du conseil, verifiez vos données.', 'details' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-            }
+            return new JsonResponse('Conseil modifié', Response::HTTP_OK);
+        } else {
+            throw $this->createNotFoundException('Conseil non trouvé');
         }
-        return new JsonResponse('Conseil non trouvé', Response::HTTP_NOT_FOUND);
     }
 }
