@@ -8,8 +8,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class GardeningTipController extends AbstractController
 {
@@ -81,11 +83,17 @@ class GardeningTipController extends AbstractController
     (
         Request                $request,
         EntityManagerInterface $entityManager,
-        SerializerInterface    $serializer
+        SerializerInterface    $serializer,
+        ValidatorInterface     $validator
     ): JsonResponse
     {
         $json = $request->getContent();
         $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
+
+        $errors = $validator->validate($gardeningTip);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
+        }
 
         $entityManager->persist($gardeningTip);
         $entityManager->flush();
@@ -101,6 +109,7 @@ class GardeningTipController extends AbstractController
         SerializerInterface    $serializer,
         int                    $id,
         GardeningTipRepository $gardeningTipRepository,
+        ValidatorInterface     $validator,
     ): JsonResponse
     {
         $gardeningTip = $gardeningTipRepository->find($id);
@@ -108,6 +117,11 @@ class GardeningTipController extends AbstractController
         if ($gardeningTip !== null) {
             $json = $request->getContent();
             $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
+
+            $errors = $validator->validate($gardeningTip);
+            if ($errors->count() > 0) {
+                return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
+            }
 
             $entityManager->persist($gardeningTip);
             $entityManager->flush();

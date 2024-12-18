@@ -7,7 +7,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
-
+use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: GardeningTipRepository::class)]
 class GardeningTip
 {
@@ -24,6 +24,7 @@ class GardeningTip
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['gardening_tip:read'])]
+    #[Assert\NotBlank(message: 'Le contenu du conseil ne peut pas être vide')]
     private ?string $content = null;
 
     #[ORM\Column]
