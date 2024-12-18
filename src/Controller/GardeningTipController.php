@@ -8,11 +8,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 class GardeningTipController extends AbstractController
 {
     #[Route('/api/test', name: 'app_gardening_tip_test')]
@@ -60,6 +59,7 @@ class GardeningTipController extends AbstractController
     }
 
     #[Route('/api/conseil/{id}', name: 'app_gardening_tip_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut supprimer un conseil', statusCode: Response::HTTP_FORBIDDEN)]
     public function deleteGardeningTip
     (
         GardeningTipRepository $gardeningTipRepository,
@@ -79,6 +79,7 @@ class GardeningTipController extends AbstractController
     }
 
     #[Route('/api/conseil', name: 'app_gardening_tip_create', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut créer un conseil', statusCode: Response::HTTP_FORBIDDEN)]
     public function createGardeningTip
     (
         Request                $request,
@@ -102,6 +103,7 @@ class GardeningTipController extends AbstractController
     }
 
     #[Route('/api/conseil/{id}', name: 'app_gardening_tip_update', methods: ['PUT'])]
+    #[isGranted('ROLE_ADMIN', message: 'Seul un administrateur peut modifier un conseil', statusCode: Response::HTTP_FORBIDDEN)]
     public function updateGardeningTip
     (
         Request                $request,
