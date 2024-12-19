@@ -35,6 +35,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 5)]
     private string $postalCode = '';
 
+    /**
+     * @var array{longitude: float, latitude: float}
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $cityCoordinates;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -119,5 +125,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getPostalCode(): string
     {
         return $this->postalCode;
+    }
+
+    public function setCityCoordinates(array $cityCoordinates): User
+    {
+        $this->cityCoordinates = $cityCoordinates;
+        return $this;
+    }
+
+    public function getCityCoordinates(): ?array
+    {
+        return $this->cityCoordinates;
     }
 }
