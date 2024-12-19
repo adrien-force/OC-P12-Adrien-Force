@@ -16,28 +16,13 @@ class GardeningTipRepository extends ServiceEntityRepository
         parent::__construct($registry, GardeningTip::class);
     }
 
-    //    /**
-    //     * @return GardeningTip[] Returns an array of GardeningTip objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('g')
-    //            ->andWhere('g.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('g.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findByMonth(int $month): array
+    {
+        return $this->createQueryBuilder('g')
+            ->where('MONTH(g.creationDate) = :month')
+            ->setParameter('month', $month)
+            ->getQuery()
+            ->getResult();
 
-    //    public function findOneBySomeField($value): ?GardeningTip
-    //    {
-    //        return $this->createQueryBuilder('g')
-    //            ->andWhere('g.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    }
 }

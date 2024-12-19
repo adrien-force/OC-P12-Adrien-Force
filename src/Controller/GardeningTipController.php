@@ -40,21 +40,21 @@ class GardeningTipController extends AbstractController
         }
     }
 
-    #[Route('/api/conseil/{id}', name: 'app_gardening_tip_show', methods: ['GET'])]
-    public function getGardeningTip
+    #[Route('/api/conseil/{month}', name: 'app_gardening_tip_month', methods: ['GET'])]
+    public function getGardeningTipsFromMonth
     (
         GardeningTipRepository $gardeningTipRepository,
         SerializerInterface    $serializer,
-        int                    $id
+        int                 $month
     ): JsonResponse
     {
-        $gardeningTip = $gardeningTipRepository->find($id);
+        $gardeningTips = $gardeningTipRepository->findByMonth($month);
 
-        if ($gardeningTip !== null) {
-            $jsonGardeningTip = $serializer->serialize(data: $gardeningTip, format: 'json', context: ['groups' => 'gardening_tip:read']);
-            return new JsonResponse($jsonGardeningTip, Response::HTTP_OK, [], true);
+        if ($gardeningTips !== []) {
+            $jsonGardeningTips = $serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
+            return new JsonResponse($jsonGardeningTips, Response::HTTP_OK, [], true);
         } else {
-            throw $this->createNotFoundException('Conseil non trouvé');
+            throw $this->createNotFoundException('Aucun conseil trouvé');
         }
     }
 
