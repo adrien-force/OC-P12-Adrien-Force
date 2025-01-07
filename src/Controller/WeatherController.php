@@ -66,7 +66,6 @@ class WeatherController extends AbstractController
         required: true,
     )]
     #[OA\Schema(type: 'integer')]
-    #[isGranted('ROLE_ADMIN')]
     public function getCityWeather
     (
         string $ville,

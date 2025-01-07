@@ -81,7 +81,7 @@ class UserController extends AbstractController
         required: true,
     )]
     #[OA\Schema(type: 'integer')]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut supprimer un compte utilisateur', statusCode: Response::HTTP_FORBIDDEN)]
     public function delete
     (
         int                   $id,
@@ -123,7 +123,7 @@ class UserController extends AbstractController
             type: 'object'
         )
     )]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut modifier un compte utilisateur', statusCode: Response::HTTP_FORBIDDEN)]
     public function update
     (
         int                    $id,
