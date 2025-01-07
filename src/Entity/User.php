@@ -6,6 +6,9 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
+use OpenApi\Attributes as OA;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -15,31 +18,40 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(['user:read', 'user:write'])]
+    #[OA\Property(description: 'Adresse email de l\'utilisateur')]
+    #[Assert\Email(message: 'Veuillez saisir une adresse email valide')]
+    #[Assert\NotBlank(message: 'L\'adresse email ne peut pas être vide')]
     private ?string $email = null;
 
     /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
+    #[Groups(['user:read'])]
+    #[OA\Property(description: 'Les rôles de l\'utilisateur')]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Groups(['user:write'])]
+    #[OA\Property(description: 'Mot de passe de l\'utilisateur')]
+    #[Assert\NotBlank(message: 'Le mot de passe ne peut pas être vide')]
     private ?string $password = null;
 
     #[ORM\Column(length: 5)]
+    #[Groups(['user:read', 'user:write'])]
+    #[OA\Property(description: 'Code postal de l\'utilisateur')]
+    #[Assert\NotBlank(message: 'Le code postal ne peut pas être vide')]
+    #[Assert\Length(min: 5, max: 5, exactMessage: 'Le code postal doit contenir exactement 5 chiffres')]
     private string $postalCode = '';
 
-    /**
-     * @var array{longitude: float, latitude: float}
-     */
-    #[ORM\Column(type: 'json', nullable: true)]
-    private ?array $cityCoordinates;
 
     public function getId(): ?int
     {
@@ -118,6 +130,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setPostalCode(string $postalCode): User
     {
+
         $this->postalCode = $postalCode;
         return $this;
     }
@@ -127,14 +140,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->postalCode;
     }
 
-    public function setCityCoordinates(array $cityCoordinates): User
-    {
-        $this->cityCoordinates = $cityCoordinates;
-        return $this;
-    }
-
-    public function getCityCoordinates(): ?array
-    {
-        return $this->cityCoordinates;
-    }
 }

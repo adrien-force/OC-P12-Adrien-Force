@@ -8,6 +8,8 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
+
 #[ORM\Entity(repositoryClass: GardeningTipRepository::class)]
 class GardeningTip
 {
@@ -23,11 +25,14 @@ class GardeningTip
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['gardening_tip:read'])]
+    #[Groups(['gardening_tip:read', 'gardening_tip:write'])]
     #[Assert\NotBlank(message: 'Le contenu du conseil ne peut pas être vide')]
+    #[OA\Property(description: 'Le contenu du conseil de jardinage')]
     private ?string $content = null;
 
     #[ORM\Column]
+    #[Groups(['exlude'])]
+    #[OA\Property(description: 'La date de création du conseil de jardinage')]
     private ?DateTimeImmutable $creationDate;
 
     public function getId(): ?int
@@ -60,7 +65,10 @@ class GardeningTip
     }
 
     #[Groups(['gardening_tip:read'])]
-    public function getMonth(): ?string
+    #[OA\Property(
+        description: 'Le mois de création du conseil de jardinage',
+        readOnly: true
+    )]    public function getMonth(): ?string
     {
         return $this->creationDate->format('F');
     }

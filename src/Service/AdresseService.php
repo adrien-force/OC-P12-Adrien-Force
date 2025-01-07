@@ -11,7 +11,9 @@ class AdresseService
 
     public function __construct(private readonly HttpClientInterface $client){}
 
-    public function getCoordinatesByPostalCode(string $postalCode): array
+    public function getCoordinatesByPostalCode(
+        string $postalCode,
+    ): array
     {
         $response = $this->client->request('GET', $this->apiUrl, [
             'query' => [
@@ -27,7 +29,7 @@ class AdresseService
         $data = $response->toArray();
 
         if (empty($data['features'])) {
-            throw new Exception('Aucune adresse trouvée pour ce code postal');
+            throw new Exception('Aucune adresse trouvée pour ce code postal, veuillez vérifier le code postal saisi pour votre utilisateur');
         }
 
         return [

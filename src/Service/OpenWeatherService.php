@@ -14,7 +14,10 @@ class OpenWeatherService
         $this->apiKey = $apiKey;
     }
 
-    public function getWeatherByCoordinates(float $latitude, float $longitude): array
+    public function getWeatherByCoordinates(
+        float $latitude,
+        float $longitude,
+    ): array
     {
 
         $response = $this->client->request('GET', $this->url, [
@@ -30,7 +33,7 @@ class OpenWeatherService
             throw new \Exception('Erreur lors de la récupération des données de l\'API OpenWeather');
         }
 
-        return $data = $response->toArray();
+        return $response->toArray();
 
     }
 }
