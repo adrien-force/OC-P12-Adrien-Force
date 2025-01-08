@@ -29,7 +29,6 @@ class WeatherController extends AbstractController
     public function getUserWeather
     (
         TagAwareCacheInterface $cache,
-        AdresseService $adresseService
     ): JsonResponse
     {
         /**
