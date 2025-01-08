@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
@@ -162,5 +163,47 @@ class UserController extends AbstractController
 
         $em->flush();
         return new JsonResponse('Compte utilisateur mis à jour', Response::HTTP_OK);
+    }
+
+    #[Route('/api/user/{id}', name: 'app_user_get', methods: ['GET'])]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'ID de l\'utilisateur',
+        in: 'path',
+        required: true,
+    )]
+    #[OA\Schema(type: 'integer')]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut accéder à un compte utilisateur', statusCode: Response::HTTP_FORBIDDEN)]
+    public function get
+    (
+        int           $id,
+        UserRepository $userRepository,
+        SerializerInterface    $serializer,
+    ): JsonResponse
+    {
+        /** @var User $user */
+        $user = $userRepository->find($id);
+        $user = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
+
+        if (!$user) {
+            return new JsonResponse('Compte utilisateur non trouvé', Response::HTTP_NOT_FOUND);
+        }
+
+        return new JsonResponse($user, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/user', name: 'app_user_list', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut accéder à la liste des utilisateurs', statusCode: Response::HTTP_FORBIDDEN)]
+    public function list
+    (
+        UserRepository $userRepository,
+        SerializerInterface    $serializer,
+
+    ): JsonResponse
+    {
+        $users = $userRepository->findAll();
+        $users = $serializer->serialize($users, 'json', ['groups' => 'user:read']);
+
+        return new JsonResponse($users, Response::HTTP_OK, [], true);
     }
 }
