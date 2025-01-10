@@ -9,6 +9,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\ConstraintViolationInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExceptionSubscriber implements EventSubscriberInterface
 {
@@ -41,10 +42,10 @@ class ExceptionSubscriber implements EventSubscriberInterface
         return new JsonResponse(
             data: [
                 'message' => 'Validation des données échouée',
-                'statut' => 400,
+                'statut' => Response::HTTP_BAD_REQUEST,
                 'erreurs' => $errors,
             ],
-            status: 400
+            status: Response::HTTP_BAD_REQUEST
         );
     }
 
@@ -64,9 +65,9 @@ class ExceptionSubscriber implements EventSubscriberInterface
         return new JsonResponse(
             data: [
                 'message' => $exception ? $exception->getMessage() : 'Une erreur inconnue est survenue',
-                'status' => 500,
+                'status' => Response::HTTP_INTERNAL_SERVER_ERROR,
             ],
-            status: 500
+            status: Response::HTTP_INTERNAL_SERVER_ERROR
         );
     }
 
