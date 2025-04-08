@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\SignUpService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,6 +21,13 @@ use OpenApi\Attributes as OA;
 
 class UserController extends AbstractController
 {
+    public function __construct
+    (
+        private readonly SignUpService $signUpService,
+    )
+    {
+    }
+
     #[Route('/api/user', name: 'app_user_signup', methods: ['POST'])]
     #[OA\RequestBody(
         description: 'Cree un compte utilisateur',
@@ -34,43 +42,9 @@ class UserController extends AbstractController
             type: 'object'
         )
     )]
-    public function signup
-    (
-        Request                $request,
-        EntityManagerInterface $em,
-        UserPasswordHasherInterface $passwordHasher,
-        UserRepository         $userRepository,
-        ValidatorInterface     $validator
-
-    ): JsonResponse
+    public function signup(Request $request): JsonResponse
     {
-        if (!$request->getContent()) {
-            return new JsonResponse('Invalid request', Response::HTTP_BAD_REQUEST);
-        }
-        $data = json_decode($request->getContent(), true);
-
-        if ($userRepository->findOneBy(['email' => $data['email']]) ) { //FIXME: Pas ouf niveau securité, à revoir
-            return new JsonResponse('Email déjà utilisé, veuillez en utiliser une autre', Response::HTTP_CONFLICT);
-        }
-
-        $user = new User();
-        $user->setEmail($data['email']);
-        if ( $data['password'] !== '' ) {
-            $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
-        } else {
-            $user->setPassword($data['password']);
-        }
-        $user->setRoles(['ROLE_USER']);
-        $user->setPostalCode($data['postalCode']);
-
-        $errors = $validator->validate($user);
-        if ($errors->count() > 0) {
-            throw new ValidationFailedException($user, $errors);
-        }
-
-        $em->persist($user);
-        $em->flush();
-        return new JsonResponse('Compte utilisateur crée', Response::HTTP_CREATED);
+        return $this->signUpService->handleSignUpRequest($request);
 
     }
 
