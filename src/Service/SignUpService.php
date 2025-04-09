@@ -13,7 +13,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-readonly final class SignUpService
+final readonly class SignUpService
 {
     public function __construct
     (
@@ -21,6 +21,7 @@ readonly final class SignUpService
         private UserPasswordHasherInterface $passwordHasher,
         private ValidatorInterface          $validator,
         private UserRepository              $userRepository,
+        private UserRequestParser           $userRequestParser,
     ){}
 
     public function handleSignUpRequest(Request $request): JsonResponse
@@ -52,16 +53,7 @@ readonly final class SignUpService
      */
     private function getAndValidateContent(Request $request): array
     {
-        if (!$request->getContent()) {
-            throw new JsonException('Invalid request', Response::HTTP_BAD_REQUEST);
-        }
-        $data = json_decode($request->getContent(), true);
-
-        $datas = [
-            'email' => $data['email'] ?? null,
-            'password' => $data['password'] ?? null,
-            'postalCode' => $data['postalCode'] ?? null,
-        ];
+        $datas = $this->userRequestParser->getUserRequestContent($request);
 
         if (
             !isset($datas['email']) ||

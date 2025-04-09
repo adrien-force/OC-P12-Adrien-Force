@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\SignUpService;
+use App\Service\UserUpdater;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,9 +25,8 @@ class UserController extends AbstractController
     public function __construct
     (
         private readonly SignUpService $signUpService,
-    )
-    {
-    }
+        private readonly UserUpdater $userUpdater,
+    ){}
 
     #[Route('/api/user', name: 'app_user_signup', methods: ['POST'])]
     #[OA\RequestBody(
@@ -103,39 +103,14 @@ class UserController extends AbstractController
     (
         int                    $id,
         Request                $request,
-        EntityManagerInterface $em,
-        UserPasswordHasherInterface $passwordHasher,
-        TagAwareCacheInterface $cache,
-        UserRepository         $userRepository,
-        ValidatorInterface     $validator
     ): JsonResponse
     {
-        $user = $userRepository->find($id);
-
-        if (!$user) {
-            return new JsonResponse('Compte utilisateur non trouvé', Response::HTTP_NOT_FOUND);
-        }
-        $data = json_decode($request->getContent(), true);
-        if (isset($data['email'])) {
-            $user->setEmail($data['email']);
-        }
-        if (isset($data['password'])) {
-            if ( $data['password'] !== '' ) {
-                $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
-            } else {
-                $user->setPassword($data['password']);
-            }
-        }
-        if (isset($data['postalCode'])) {
-            $user->setPostalCode($data['postalCode']);
-            $cache->invalidateTags([sprintf("weatherCache%s", $user->getId())]);
-        }
-        $errors = $validator->validate($user);
-        if ($errors->count() > 0) {
-            throw new ValidationFailedException($user, $errors);
+        try {
+            $this->userUpdater->updateUser($id, $request);
+        } catch (\Exception $e) {
+            return new JsonResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         }
 
-        $em->flush();
         return new JsonResponse('Compte utilisateur mis à jour', Response::HTTP_OK);
     }
 
