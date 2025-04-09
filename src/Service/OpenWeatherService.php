@@ -2,9 +2,10 @@
 
 namespace App\Service;
 
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class OpenWeatherService
+final class OpenWeatherService
 {
     private $apiKey;
     private string $url = 'https://api.openweathermap.org/data/3.0/onecall';
@@ -29,7 +30,7 @@ class OpenWeatherService
             ]
         ]);
 
-        if ($response->getStatusCode() !== 200) {
+        if ($response->getStatusCode() !== Response::HTTP_OK) {
             throw new \Exception('Erreur lors de la récupération des données de l\'API OpenWeather');
         }
 
