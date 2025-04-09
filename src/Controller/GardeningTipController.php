@@ -20,8 +20,19 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
-class GardeningTipController extends AbstractController
+final class GardeningTipController extends AbstractController
 {
+    public function __construct
+    (
+        private readonly GardeningTipRepository $gardeningTipRepository,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator,
+        private readonly TagAwareCacheInterface $cache
+    )
+    {
+    }
+
     #[Route('/api/conseil', name: 'app_gardening_tip_list', methods: ['GET'])]
     #[OA\Response(
         response: 200,
@@ -31,22 +42,17 @@ class GardeningTipController extends AbstractController
             items: new OA\Items(ref: new Model(type: GardeningTip::class, groups: ['gardening_tip:read']))
         )
     )]
-    public function getAllGardeningTips
-    (
-        GardeningTipRepository $gardeningTipRepository,
-        SerializerInterface    $serializer,
-        TagAwareCacheInterface $cache
-    ): JsonResponse
+    public function getAllGardeningTips(): JsonResponse
     {
         $idCache = sprintf("gardening_tips");
-        $gardeningTips = $cache->get($idCache, function(ItemInterface $item) use ($gardeningTipRepository, $serializer) {
+        $gardeningTips = $this->cache->get($idCache, function(ItemInterface $item){
             $item->tag("gardening_tips");
             $item->expiresAfter(3600);
-            $gardeningTips = $gardeningTipRepository->findAll();
+            $gardeningTips = $this->gardeningTipRepository->findAll();
             if ($gardeningTips === []) {
                 throw $this->createNotFoundException('Aucun conseil trouvé');
             }
-            return $serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
+            return $this->serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
         });
 
         return new JsonResponse($gardeningTips, Response::HTTP_OK, [], true);
@@ -69,27 +75,21 @@ class GardeningTipController extends AbstractController
             items: new OA\Items(ref: new Model(type: GardeningTip::class, groups: ['gardening_tip:read']))
         )
     )]
-    public function getGardeningTipsFromMonth
-    (
-        GardeningTipRepository $gardeningTipRepository,
-        SerializerInterface    $serializer,
-        int                 $month,
-        TagAwareCacheInterface $cache
-    ): JsonResponse
+    public function getGardeningTipsFromMonth(int $month): JsonResponse
     {
         if ($month < 1 || $month > 12) {
             throw new BadRequestHttpException('Le mois doit être compris entre 1 et 12');
         }
 
         $idCache = sprintf("gardening_tips_month_%s", $month);
-        $gardeningTips = $cache->get($idCache, function(ItemInterface $item) use ($gardeningTipRepository, $serializer, $month) {
+        $gardeningTips = $this->cache->get($idCache, function(ItemInterface $item) use ($month) {
             $item->tag("gardening_tips_month_$month");
             $item->expiresAfter(3600);
-            $gardeningTips = $gardeningTipRepository->findByMonth($month);
+            $gardeningTips = $this->gardeningTipRepository->findByMonth($month);
             if ($gardeningTips === []) {
                 throw $this->createNotFoundException('Aucun conseil trouvé');
             }
-            return $serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
+            return $this->serializer->serialize(data: $gardeningTips, format: 'json', context: ['groups' => 'gardening_tip:read']);
         });
         return new JsonResponse($gardeningTips, Response::HTTP_OK, [], true);
     }
@@ -107,27 +107,21 @@ class GardeningTipController extends AbstractController
         response: 200,
         description: 'Permet de supprimer un conseil de jardinage',
         )]
-    public function deleteGardeningTip
-    (
-        GardeningTipRepository $gardeningTipRepository,
-        EntityManagerInterface $entityManager,
-        int                    $id,
-        TagAwareCacheInterface $cache
-    ): JsonResponse
+    public function deleteGardeningTip(int $id): JsonResponse
     {
-        if (empty($id) || ctype_space($id)) {
+        if (empty($id)) {
             throw new BadRequestHttpException('L\'identifiant du conseil ne peut pas être vide ou constitué d\'espaces blancs');
         }
 
-        $gardeningTip = $gardeningTipRepository->find($id);
+        $gardeningTip = $this->gardeningTipRepository->find($id);
 
         if ($gardeningTip === null) {
             throw $this->createNotFoundException('Conseil non trouvé');
         }
 
-        $this->invalidateGardeningTipCache($cache, $gardeningTip);
-        $entityManager->remove($gardeningTip);
-        $entityManager->flush();
+        $this->invalidateGardeningTipCache($gardeningTip);
+        $this->entityManager->remove($gardeningTip);
+        $this->entityManager->flush();
         return new JsonResponse('Conseil supprimé', Response::HTTP_NO_CONTENT);
     }
 
@@ -152,14 +146,7 @@ class GardeningTipController extends AbstractController
             items: new OA\Items(ref: new Model(type: GardeningTip::class, groups: ['gardening_tip:write']))
         )
     )]
-    public function createGardeningTip
-    (
-        Request                $request,
-        EntityManagerInterface $entityManager,
-        SerializerInterface    $serializer,
-        ValidatorInterface     $validator,
-        TagAwareCacheInterface $cache
-    ): JsonResponse
+    public function createGardeningTip(Request $request): JsonResponse
     {
         $json = $request->getContent();
 
@@ -167,16 +154,16 @@ class GardeningTipController extends AbstractController
             return new JsonResponse('Le contenu du conseil ne peut pas être vide');
         }
 
-        $gardeningTip = $serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
-        $errors = $validator->validate($gardeningTip);
+        $gardeningTip = $this->serializer->deserialize($json, 'App\Entity\GardeningTip', 'json');
+        $errors = $this->validator->validate($gardeningTip);
 
         if ($errors->count() > 0) {
             throw new ValidationFailedException($gardeningTip, $errors);
         }
 
-        $this->invalidateGardeningTipCache($cache, $gardeningTip);
-        $entityManager->persist($gardeningTip);
-        $entityManager->flush();
+        $this->invalidateGardeningTipCache($gardeningTip);
+        $this->entityManager->persist($gardeningTip);
+        $this->entityManager->flush();
 
         return new JsonResponse('Conseil crée', Response::HTTP_CREATED);
     }
@@ -209,18 +196,12 @@ class GardeningTipController extends AbstractController
             items: new OA\Items(ref: new Model(type: GardeningTip::class, groups: ['gardening_tip:write']))
         )
     )]
-    public function updateGardeningTip
-    (
-        Request                $request,
-        EntityManagerInterface $entityManager,
-        SerializerInterface    $serializer,
-        int                    $id,
-        GardeningTipRepository $gardeningTipRepository,
-        ValidatorInterface     $validator,
-        TagAwareCacheInterface $cache
+    public function updateGardeningTip(
+        int     $id,
+        Request $request,
     ): JsonResponse
     {
-        $gardeningTip = $gardeningTipRepository->find($id);
+        $gardeningTip = $this->gardeningTipRepository->find($id);
 
         if ($gardeningTip === null) {
             throw $this->createNotFoundException('Conseil non trouvé');
@@ -232,30 +213,30 @@ class GardeningTipController extends AbstractController
             throw new BadRequestHttpException('Le contenu du conseil que vous souhaitez modifier ne peut pas être vide');
         }
 
-        $serializer->deserialize(
+        $this->serializer->deserialize(
             data: $json,
             type:'App\Entity\GardeningTip',
             format:'json',
             context: ['object_to_populate' => $gardeningTip]
         );
 
-        $errors = $validator->validate($gardeningTip);
+        $errors = $this->validator->validate($gardeningTip);
         if ($errors->count() > 0) {
             throw new ValidationFailedException($gardeningTip, $errors);
         }
 
-        $this->invalidateGardeningTipCache($cache, $gardeningTip);
-        $entityManager->persist($gardeningTip);
-        $entityManager->flush();
+        $this->invalidateGardeningTipCache($gardeningTip);
+        $this->entityManager->persist($gardeningTip);
+        $this->entityManager->flush();
 
         return new JsonResponse('Conseil modifié', Response::HTTP_OK);
     }
 
-    private function invalidateGardeningTipCache(TagAwareCacheInterface $cache, GardeningTip $gardeningTip): void
+    private function invalidateGardeningTipCache(GardeningTip $gardeningTip): void
     {
-        $cache->invalidateTags(["gardening_tips"]);
+        $this->cache->invalidateTags(["gardening_tips"]);
         if ($month = $gardeningTip->getMonth()) {
-            $cache->invalidateTags(["gardening_tips_month_$month"]);
+            $this->cache->invalidateTags(["gardening_tips_month_$month"]);
         }
     }
 }
