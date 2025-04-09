@@ -26,6 +26,9 @@ class UserController extends AbstractController
     (
         private readonly SignUpService $signUpService,
         private readonly UserUpdater $userUpdater,
+        private readonly UserRepository $userRepository,
+        private readonly EntityManagerInterface $em,
+        private readonly SerializerInterface $serializer,
     ){}
 
     #[Route('/api/user', name: 'app_user_signup', methods: ['POST'])]
@@ -57,24 +60,19 @@ class UserController extends AbstractController
     )]
     #[OA\Schema(type: 'integer')]
     #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut supprimer un compte utilisateur', statusCode: Response::HTTP_FORBIDDEN)]
-    public function delete
-    (
-        int                   $id,
-        EntityManagerInterface $em,
-        UserRepository         $userRepository
-    ): JsonResponse
+    public function delete(int $id): JsonResponse
     {
         if (!$id) {
             return new JsonResponse('Veuillez renseigner un ID', Response::HTTP_BAD_REQUEST);
         }
 
-        $user = $userRepository->find($id);
+        $user = $this->userRepository->find($id);
         if (!$user) {
             return new JsonResponse('Compte utilisateur non trouvé', Response::HTTP_NOT_FOUND);
         }
 
-        $em->remove($user);
-        $em->flush();
+        $this->em->remove($user);
+        $this->em->flush();
         return new JsonResponse('Compte utilisateur supprimé', Response::HTTP_OK);
     }
 
@@ -123,16 +121,11 @@ class UserController extends AbstractController
     )]
     #[OA\Schema(type: 'integer')]
     #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut accéder à un compte utilisateur', statusCode: Response::HTTP_FORBIDDEN)]
-    public function get
-    (
-        int           $id,
-        UserRepository $userRepository,
-        SerializerInterface    $serializer,
-    ): JsonResponse
+    public function get(int $id): JsonResponse
     {
         /** @var User $user */
-        $user = $userRepository->find($id);
-        $user = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
+        $user = $this->userRepository->find($id);
+        $user = $this->serializer->serialize($user, 'json', ['groups' => 'user:read']);
 
         if (!$user) {
             return new JsonResponse('Compte utilisateur non trouvé', Response::HTTP_NOT_FOUND);
@@ -143,15 +136,10 @@ class UserController extends AbstractController
 
     #[Route('/api/user', name: 'app_user_list', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN', message: 'Seul un administrateur peut accéder à la liste des utilisateurs', statusCode: Response::HTTP_FORBIDDEN)]
-    public function list
-    (
-        UserRepository $userRepository,
-        SerializerInterface    $serializer,
-
-    ): JsonResponse
+    public function list(): JsonResponse
     {
-        $users = $userRepository->findAll();
-        $users = $serializer->serialize($users, 'json', ['groups' => 'user:read']);
+        $users = $this->userRepository->findAll();
+        $users = $this->serializer->serialize($users, 'json', ['groups' => 'user:read']);
 
         return new JsonResponse($users, Response::HTTP_OK, [], true);
     }
