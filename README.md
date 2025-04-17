@@ -26,6 +26,16 @@ L'API a pour but de rendre les informations de son site WEB disponibles au publi
 - PHP ^8.0
 - Docker
 
+## 🔑 Générer les clés JWT
+
+Avant de pouvoir utiliser le bundle LexikJWTAuthentication, il faut générer un couple de clés publique/privée.
+Le reste est déjà configuré dans le projet, avec un env.local qui contient les variables d'environnement nécessaires.
+
+Exécutez la commande suivante pour générer les clés JWT :
+
+```bash
+php bin/console lexik:jwt:generate-keypair --overwrite
+```
 ## 🛠️ Installation
 
 1. Cloner le projet sur votre machine
