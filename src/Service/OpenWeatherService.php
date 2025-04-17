@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -20,7 +21,6 @@ final class OpenWeatherService
         float $longitude,
     ): array
     {
-
         $response = $this->client->request('GET', $this->url, [
             'query' => [
                 'lat' => $latitude,
@@ -31,10 +31,10 @@ final class OpenWeatherService
         ]);
 
         if ($response->getStatusCode() !== Response::HTTP_OK) {
-            throw new \Exception('Erreur lors de la récupération des données de l\'API OpenWeather');
+            throw new \JsonException('Erreur lors de la récupération des données de l\'API OpenWeather');
         }
 
-        return $response->toArray();
+        return json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
     }
 }

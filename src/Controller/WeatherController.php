@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Service\AdresseService;
 use App\Service\OpenWeatherService;
 use Exception;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,11 +40,15 @@ class WeatherController extends AbstractController
 
             $idCache = sprintf("weather_user_%s", $user->getId());
 
-            $weather = $this->cache->get($idCache, function(ItemInterface $item) use ($coordinates, $user) {
-                $item->tag(sprintf("weatherCache%s", $user->getId()));
-                $item->expiresAfter(3600);
-                return $this->openWeatherService->getWeatherByCoordinates($coordinates['latitude'], $coordinates['longitude']);
-            });
+            try {
+                $weather = $this->cache->get($idCache, function (ItemInterface $item) use ($coordinates, $user) {
+                    $item->tag(sprintf("weatherCache%s", $user->getId()));
+                    $item->expiresAfter(3600);
+                    return $this->openWeatherService->getWeatherByCoordinates($coordinates['latitude'], $coordinates['longitude']);
+                });
+            } catch (\Throwable $e) {
+                return new JsonResponse("Erreur de récupération des données météo", Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
 
             return new JsonResponse([
                 'message' => sprintf('Données météo récupérées avec succès pour le code postal: %s', $user->getPostalCode()),
