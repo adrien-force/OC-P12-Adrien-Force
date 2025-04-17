@@ -6,7 +6,6 @@ use App\Entity\User;
 use App\Service\AdresseService;
 use App\Service\OpenWeatherService;
 use Exception;
-use Psr\Cache\InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
